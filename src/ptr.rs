@@ -1,6 +1,6 @@
 //! The base pointer types that enforce safety of the API
 
-use std::{
+use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
     ptr::NonNull,

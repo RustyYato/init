@@ -1,3 +1,4 @@
+#![no_std]
 #![forbid(
     missing_docs,
     clippy::missing_safety_doc,
