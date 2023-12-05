@@ -1,6 +1,6 @@
 //! an interface for calcualting the layout and generically casting pointers to possibly unsized types
 
-use core::{alloc::Layout, pin::Pin, ptr::NonNull};
+use core::{alloc::Layout, num, pin::Pin, ptr::NonNull};
 
 /// A trait that describes types which can calculate the layout and
 /// cast pointers based on ctor initializers
@@ -168,9 +168,168 @@ macro_rules! primitive {
     )*};
 }
 
+macro_rules! nz_primitive {
+    ($($t:ident)*) => {$(
+        // SAFETY: sized types can always just use cast
+        unsafe impl LayoutProvider<num::$t> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &()) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<num::$t, num::$t> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &num::$t) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &num::$t) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<num::$t, &num::$t> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &&num::$t) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &&num::$t) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<num::$t, &mut num::$t> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &&mut num::$t) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &&mut num::$t) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<num::$t, Pin<&num::$t>> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &Pin<&num::$t>) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &Pin<&num::$t>) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<num::$t, Pin<&mut num::$t>> for PrimitiveLayout {
+            #[inline]
+            fn layout_for(_: &Pin<&mut num::$t>) -> Option<Layout> {
+                Some(Layout::new::<num::$t>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &Pin<&mut num::$t>) -> NonNull<num::$t> {
+                ptr.cast()
+            }
+        }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<Option<num::$t>> for NicheLayout {
+            #[inline]
+            fn layout_for(_: &()) -> Option<Layout> {
+                Some(Layout::new::<Option<num::$t>>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<num::$t>> {
+                ptr.cast()
+            }
+
+            #[inline]
+            fn is_zeroed(_args: &()) -> bool {
+                true
+            }
+        }
+    )*};
+}
+
 primitive! {
     u8 u16 u32 u64 u128 usize
     i8 i16 i32 i64 i128 isize
     char = '\0' bool = false
     f32 = 0.0 f64 = 0.0
+}
+
+nz_primitive! {
+    NonZeroU8 NonZeroU16 NonZeroU32 NonZeroU64 NonZeroU128 NonZeroUsize
+    NonZeroI8 NonZeroI16 NonZeroI32 NonZeroI64 NonZeroI128 NonZeroIsize
+}
+
+/// The layout provider for Option<T>
+pub struct OptionLayout;
+/// The layout provider for Option<&T>, Option<&mut T>, Option<NonNull<T>>
+pub struct NicheLayout;
+
+// SAFETY: sized types can always just use cast
+unsafe impl<T> LayoutProvider<Option<T>> for OptionLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<T>> {
+        ptr.cast()
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<'a, T> LayoutProvider<Option<&'a T>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<&'a T>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<T> LayoutProvider<Option<NonNull<T>>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<NonNull<T>>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
 }

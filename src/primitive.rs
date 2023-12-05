@@ -93,3 +93,15 @@ primitive! {
     char = '\0' bool = false
     f32 = 0.0 f64 = 0.0
 }
+
+impl<T> Ctor for Option<T> {
+    type Error = core::convert::Infallible;
+
+    #[inline]
+    fn try_init(
+        ptr: crate::ptr::Uninit<Self>,
+        _: (),
+    ) -> Result<crate::ptr::Init<Self>, Self::Error> {
+        Ok(ptr.write(None))
+    }
+}
