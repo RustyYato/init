@@ -28,6 +28,16 @@ impl<'a, T> SliceWriter<'a, T> {
         }
     }
 
+    /// The number of remaining elements to initialize or zero if the writer is poisoned
+    #[allow(clippy::len_without_is_empty)]
+    pub fn len(&self) -> usize {
+        if self.poisoned {
+            0
+        } else {
+            self.iter.len()
+        }
+    }
+
     /// If this writer has more elements or is poisoned
     pub fn is_complete(&self) -> bool {
         self.iter.is_empty() || self.poisoned
