@@ -108,6 +108,19 @@ impl<'a, T: ?Sized> Uninit<'a, T> {
     }
 }
 
+impl<'a, T> Uninit<'a, T> {
+    /// Cast the pointer to an array to a pointer to a slice
+    pub fn write(self, value: T) -> Init<'a, T> {
+        // SAFETY: `Uninit` guarantees that the pointer is
+        // * valid for writes
+        // * properly aligned
+        // * properly initialized value of type `T`
+        unsafe { self.ptr.as_ptr().write(value) };
+        // SAFETY: ^^ we just initialized the pointer
+        unsafe { self.assume_init() }
+    }
+}
+
 impl<'a, T, const N: usize> Uninit<'a, [T; N]> {
     /// Cast the pointer to an array to a pointer to a slice
     pub const fn as_slice(self) -> Uninit<'a, [T]> {

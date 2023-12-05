@@ -17,6 +17,8 @@ pub mod slice_writer;
 
 pub mod layout_provider;
 
+mod primitive;
+
 /// A trait to initialize a location in place, or error
 pub trait Ctor<Args = ()> {
     /// The error type if initialization fails, use [`core::convert::Infallible`] if initialization can't fail
