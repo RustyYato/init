@@ -72,6 +72,25 @@ impl<'a, T: ?Sized> Uninit<'a, T> {
 
     #[doc(hidden)]
     pub fn ensure_lifetimes_eq<U: ?Sized>(&self, _: &Uninit<'a, U>) {}
+
+    /// Initialize this pointer with the given initializer
+    pub fn init<Args: crate::Initializer<T, Error = core::convert::Infallible>>(
+        self,
+        args: Args,
+    ) -> Init<'a, T> {
+        match args.try_init_into(self) {
+            Ok(init) => init,
+            Err(inf) => match inf {},
+        }
+    }
+
+    /// Try to initialize this pointer with the given initializer
+    pub fn try_init<Args: crate::Initializer<T>>(
+        self,
+        args: Args,
+    ) -> Result<Init<'a, T>, Args::Error> {
+        args.try_init_into(self)
+    }
 }
 
 impl<'a, T, const N: usize> Uninit<'a, [T; N]> {
