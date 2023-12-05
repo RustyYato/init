@@ -16,6 +16,7 @@ macro_rules! primitive {
         impl Ctor for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init(
                 ptr: crate::ptr::Uninit<Self>,
                 _: (),
@@ -27,6 +28,7 @@ macro_rules! primitive {
         impl Ctor<$t> for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init(
                 ptr: crate::ptr::Uninit<Self>,
                 src: $t,
@@ -38,6 +40,7 @@ macro_rules! primitive {
         impl Ctor<&$t> for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init<'a>(
                 ptr: crate::ptr::Uninit<'a, Self>,
                 src: &$t,
@@ -49,6 +52,7 @@ macro_rules! primitive {
         impl Ctor<&mut $t> for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init<'a>(
                 ptr: crate::ptr::Uninit<'a, Self>,
                 src: &mut $t,
@@ -60,6 +64,7 @@ macro_rules! primitive {
         impl Ctor<Pin<&$t>> for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init<'a>(
                 ptr: crate::ptr::Uninit<'a, Self>,
                 src: Pin<&$t>,
@@ -71,6 +76,7 @@ macro_rules! primitive {
         impl Ctor<Pin<&mut $t>> for $t {
             type Error = core::convert::Infallible;
 
+            #[inline]
             fn try_init<'a>(
                 ptr: crate::ptr::Uninit<'a, Self>,
                 src: Pin<&mut $t>,
