@@ -265,6 +265,24 @@ macro_rules! nz_primitive {
                 true
             }
         }
+
+        // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+        unsafe impl LayoutProvider<Option<num::$t>, Option<num::$t>> for NicheLayout {
+            #[inline]
+            fn layout_for(_: &Option<num::$t>) -> Option<Layout> {
+                Some(Layout::new::<Option<num::$t>>())
+            }
+
+            #[inline]
+            unsafe fn cast(ptr: NonNull<u8>, _: &Option<num::$t>) -> NonNull<Option<num::$t>> {
+                ptr.cast()
+            }
+
+            #[inline]
+            fn is_zeroed(args: &Option<num::$t>) -> bool {
+                args.is_none()
+            }
+        }
     )*};
 }
 

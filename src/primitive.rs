@@ -105,3 +105,15 @@ impl<T> Ctor for Option<T> {
         Ok(ptr.write(None))
     }
 }
+
+impl<T> Ctor<Option<T>> for Option<T> {
+    type Error = core::convert::Infallible;
+
+    #[inline]
+    fn try_init(
+        ptr: crate::ptr::Uninit<Self>,
+        val: Option<T>,
+    ) -> Result<crate::ptr::Init<Self>, Self::Error> {
+        Ok(ptr.write(val))
+    }
+}
