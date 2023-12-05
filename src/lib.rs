@@ -13,8 +13,10 @@
 pub mod iter;
 pub mod ptr;
 
+pub mod slice_writer;
+
 /// A trait to initialize a location in place, or error
-pub trait Init<Args> {
+pub trait Ctor<Args> {
     /// The error type if initialization fails, use [`core::convert::Infallible`] if initialization can't fail
     type Error;
 
@@ -33,7 +35,7 @@ pub trait Initializer<T: ?Sized> {
     fn try_init_into(self, ptr: ptr::Uninit<T>) -> Result<ptr::Init<T>, Self::Error>;
 }
 
-impl<T: ?Sized + Init<A>, A> Initializer<T> for A {
+impl<T: ?Sized + Ctor<A>, A> Initializer<T> for A {
     type Error = T::Error;
 
     fn try_init_into(self, ptr: ptr::Uninit<T>) -> Result<ptr::Init<T>, Self::Error> {
@@ -50,7 +52,7 @@ pub fn init_fn<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>>(f: F) -> CtorFromFn
 /// An adapter type to convert a closure to an initializer, see [`init_fn`] for details
 pub struct CtorFromFn<F>(F);
 
-impl<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Init<CtorFromFn<F>> for T {
+impl<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Ctor<CtorFromFn<F>> for T {
     type Error = core::convert::Infallible;
 
     fn try_init(
@@ -72,7 +74,7 @@ pub fn try_init_fn<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>>(
 /// An adapter type to convert a closure to an initializer, see [`try_init_fn`] for details
 pub struct TryCtorFromFn<F>(F);
 
-impl<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Init<TryCtorFromFn<F>> for T {
+impl<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Ctor<TryCtorFromFn<F>> for T {
     type Error = E;
 
     fn try_init(

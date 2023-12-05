@@ -65,6 +65,16 @@ impl<'a, T: ?Sized> Uninit<'a, T> {
         self.ptr
     }
 
+    /// Convert this `Uninit` into a raw pointer
+    pub const fn as_ptr(&self) -> *mut T {
+        self.ptr.as_ptr()
+    }
+
+    /// Convert this `Uninit` into a raw pointer
+    pub const fn as_non_null(&self) -> NonNull<T> {
+        self.ptr
+    }
+
     /// Convert this `Uninit` to a `Init` without checking
     /// if it was initialized yet
     ///
@@ -134,12 +144,17 @@ impl<'a, T: ?Sized> Init<'a, T> {
     /// Convert this `Init` into a raw pointer without dropping the value
     pub const fn into_raw(self) -> *mut T {
         let ptr = self.raw.ptr;
-        core::mem::forget(self);
+        self.take_ownership();
         ptr.as_ptr()
     }
 
     #[doc(hidden)]
     pub fn ensure_lifetimes_eq<U: ?Sized>(&self, _: &Init<'a, U>) {}
+
+    /// Leaks this `Init` because someone else has taken ownership of the underlying pointer
+    pub const fn take_ownership(self) {
+        core::mem::forget(self);
+    }
 }
 
 impl<'a, T> Init<'a, T> {
