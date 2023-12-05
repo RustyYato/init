@@ -10,6 +10,7 @@
 //!
 //! A crate to handle in-place initialization to support initializing unsized or pinned types.
 
+pub mod iter;
 pub mod ptr;
 
 /// A trait to initialize a location in place, or error

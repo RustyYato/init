@@ -60,6 +60,11 @@ impl<'a, T: ?Sized> Uninit<'a, T> {
         self.ptr.as_ptr()
     }
 
+    /// Convert this `Uninit` into a raw pointer
+    pub const fn into_non_null(self) -> NonNull<T> {
+        self.ptr
+    }
+
     /// Convert this `Uninit` to a `Init` without checking
     /// if it was initialized yet
     ///
