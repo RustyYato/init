@@ -1,6 +1,10 @@
 //! The base pointer types that enforce safety of the API
 
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    ptr::NonNull,
+};
 
 struct Invariant<'a, T: ?Sized>(PhantomData<fn() -> *mut &'a mut T>);
 
@@ -26,6 +30,7 @@ pub struct Uninit<'a, T: ?Sized> {
 /// * allocated with a layout which fits T's layout
 /// * initialized for T
 /// * valid for reads and writes
+/// * the `T` must not be moved in memory (i.e. the T is pinned)
 pub struct Init<'a, T: ?Sized> {
     raw: Uninit<'a, T>,
 }
@@ -113,6 +118,20 @@ impl<'a, T: ?Sized> Init<'a, T> {
     pub fn ensure_lifetimes_eq<U: ?Sized>(&self, _: &Init<'a, U>) {}
 }
 
+impl<'a, T> Init<'a, T> {
+    /// Convert this `Init` into a raw pointer without dropping the value
+    pub const fn into_inner(self) -> T
+    where
+        T: Unpin,
+    {
+        // SAFETY: `Init` guarantees that the pointer is
+        // * valid for reads
+        // * properly aligned
+        // * properly initialized value of type `T`
+        unsafe { self.into_raw().read() }
+    }
+}
+
 impl<'a, T> Init<'a, [T]> {
     /// Check if the slice is
     pub const fn len(&self) -> usize {
@@ -141,5 +160,23 @@ impl<T: ?Sized> Drop for Init<'_, T> {
         // SAFETY: `Init` guarantees that the pointer is initialized,  unique,
         // aligned, non-null, valid for reads and writes
         unsafe { self.raw.ptr.as_ptr().drop_in_place() }
+    }
+}
+
+impl<T: ?Sized> Deref for Init<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        // SAFETY: `Init` guarantees that the pointer is initialized,  unique,
+        // aligned, non-null, valid for reads
+        unsafe { self.raw.ptr.as_ref() }
+    }
+}
+
+impl<T: ?Sized + Unpin> DerefMut for Init<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // SAFETY: `Init` guarantees that the pointer is initialized,  unique,
+        // aligned, non-null, valid for reads and writes
+        unsafe { self.raw.ptr.as_mut() }
     }
 }
