@@ -6,7 +6,8 @@ use crate::{
 
 pub struct SliceLayout<L = SliceLayout<SizedLayout>>(L);
 
-// SAFETY:
+// SAFETY: the slice returned from `cast` has the layout specified by `layout_for`
+// and slices are zeroable if their element is zeroable
 unsafe impl<T, I, L: LayoutProvider<[T], I>> LayoutProvider<[T], InitWithLen<I>>
     for SliceLayout<L>
 {
@@ -26,23 +27,65 @@ unsafe impl<T, I, L: LayoutProvider<[T], I>> LayoutProvider<[T], InitWithLen<I>>
     }
 }
 
-// // SAFETY:
-// unsafe impl<T, I, L: LayoutProvider<T, I>> LayoutProvider<[T], InitWithLen<I>> for SliceLayout<L> {
-//     #[inline]
-//     fn layout_for(args: &InitWithLen<I>) -> Option<core::alloc::Layout> {
-//         core::alloc::Layout::array::<T>(args.1).ok()
-//     }
+// SAFETY:  since we never return a layout in `layout_for`, it isn't possible to call cast
+// and slices are zeroable if their element is zeroable
+unsafe impl<T, I, L: LayoutProvider<T, I>> LayoutProvider<[T], CopyArgs<I>> for SliceLayout<L> {
+    #[inline]
+    fn layout_for(_args: &CopyArgs<I>) -> Option<core::alloc::Layout> {
+        None
+    }
 
-//     #[inline]
-//     unsafe fn cast(ptr: core::ptr::NonNull<u8>, args: &InitWithLen<I>) -> core::ptr::NonNull<[T]> {
-//         core::ptr::NonNull::slice_from_raw_parts(ptr.cast(), args.1)
-//     }
+    #[inline]
+    unsafe fn cast(_ptr: core::ptr::NonNull<u8>, _args: &CopyArgs<I>) -> core::ptr::NonNull<[T]> {
+        // SAFETY: The caller is not allowed to call cast if `layout_for` doesn't return a
+        unsafe { core::hint::unreachable_unchecked() }
+    }
 
-//     #[inline]
-//     fn is_zeroed(args: &InitWithLen<I>) -> bool {
-//         L::is_zeroed(&args.0)
-//     }
-// }
+    #[inline]
+    fn is_zeroed(args: &CopyArgs<I>) -> bool {
+        L::is_zeroed(&args.0)
+    }
+}
+
+// SAFETY:  since we never return a layout in `layout_for`, it isn't possible to call cast
+// and slices are zeroable if their element is zeroable
+unsafe impl<T, I, L: LayoutProvider<T, I>> LayoutProvider<[T], CloneArgs<I>> for SliceLayout<L> {
+    #[inline]
+    fn layout_for(_args: &CloneArgs<I>) -> Option<core::alloc::Layout> {
+        None
+    }
+
+    #[inline]
+    unsafe fn cast(_ptr: core::ptr::NonNull<u8>, _args: &CloneArgs<I>) -> core::ptr::NonNull<[T]> {
+        // SAFETY: The caller is not allowed to call cast if `layout_for` doesn't return a layout
+        unsafe { core::hint::unreachable_unchecked() }
+    }
+
+    #[inline]
+    fn is_zeroed(args: &CloneArgs<I>) -> bool {
+        L::is_zeroed(&args.0)
+    }
+}
+
+// SAFETY:  since we never return a layout in `layout_for`, it isn't possible to call cast
+// and slices are zeroable if their element is zeroable
+unsafe impl<T, I, L> LayoutProvider<[T], IterArgs<I>> for SliceLayout<L> {
+    #[inline]
+    fn layout_for(_args: &IterArgs<I>) -> Option<core::alloc::Layout> {
+        None
+    }
+
+    #[inline]
+    unsafe fn cast(_ptr: core::ptr::NonNull<u8>, _args: &IterArgs<I>) -> core::ptr::NonNull<[T]> {
+        // SAFETY: The caller is not allowed to call cast if `layout_for` doesn't return a layout
+        unsafe { core::hint::unreachable_unchecked() }
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &IterArgs<I>) -> bool {
+        false
+    }
+}
 
 pub struct InitWithLen<I>(I, usize);
 
