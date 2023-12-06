@@ -18,7 +18,7 @@ pub mod slice_writer;
 pub mod layout_provider;
 
 mod primitive;
-mod slice;
+pub mod slice;
 
 /// A trait to initialize a location in place, or error
 pub trait Ctor<Args = ()> {

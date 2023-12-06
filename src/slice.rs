@@ -1,9 +1,12 @@
+//! in place slice constructors
+
 use crate::{
     layout_provider::{LayoutProvider, SizedLayout},
     slice_writer::SliceWriter,
     Ctor,
 };
 
+/// a layout provider for slices
 pub struct SliceLayout<L = SliceLayout<SizedLayout>>(L);
 
 // SAFETY: the slice returned from `cast` has the layout specified by `layout_for`
@@ -87,9 +90,11 @@ unsafe impl<T, I, L> LayoutProvider<[T], IterArgs<I>> for SliceLayout<L> {
     }
 }
 
+/// a constructor which stores the length, so it can be used to allocate the slice
 pub struct InitWithLen<I>(I, usize);
 
 impl<I> InitWithLen<I> {
+    /// Create the [`InitWithLen`] initializer
     #[inline]
     pub const fn new(len: usize, init: I) -> Self {
         Self(init, len)
@@ -124,14 +129,18 @@ impl<T: Ctor> Ctor for [T] {
     }
 }
 
+/// A slice constructor which copies the argument to each element and
+/// initializes each element with the copy
 pub struct CopyArgs<I>(I);
 
 impl<I> CopyArgs<I> {
+    /// Create a new [`CopyArgs`] initializer
     #[inline]
     pub const fn new(init: I) -> Self {
         Self(init)
     }
 
+    /// Convert this initializer to a [`InitWithLen`] initializer with the given length
     #[inline]
     pub const fn with_len(self, len: usize) -> InitWithLen<Self> {
         InitWithLen::new(len, self)
@@ -153,14 +162,18 @@ impl<T, I: crate::Initializer<T> + Copy> Ctor<CopyArgs<I>> for [T] {
     }
 }
 
+/// A slice constructor which clones the argument to each element and
+/// initializes each element with the clone
 pub struct CloneArgs<I>(I);
 
 impl<I> CloneArgs<I> {
+    /// Create a new [`CloneArgs`] initializer
     #[inline]
     pub const fn new(init: I) -> Self {
         Self(init)
     }
 
+    /// Convert this initializer to a [`InitWithLen`] initializer with the given length
     #[inline]
     pub const fn with_len(self, len: usize) -> InitWithLen<Self> {
         InitWithLen::new(len, self)
@@ -192,14 +205,20 @@ impl<T, I: crate::Initializer<T> + Clone> Ctor<CloneArgs<I>> for [T] {
     }
 }
 
+/// Takes an iterator yielding initializers and initializes each element of the slice
+/// with each initializer. It will consume at most slice.len() elements from the iterator.
+/// If there are fewer than slice.len() elements, then all initialized elements will be dropped
+/// and an error will be reported.
 pub struct IterArgs<I>(I);
 
 impl<I> IterArgs<I> {
+    /// Create a new [`IterArgs`] from the iterator
     #[inline]
     pub const fn new(init: I) -> Self {
         Self(init)
     }
 
+    /// Convert this initializer to [`InitWithLen`] using the length given by [`ExactSizeIterator`]
     #[inline]
     pub fn with_len(self) -> InitWithLen<Self>
     where
@@ -209,9 +228,12 @@ impl<I> IterArgs<I> {
     }
 }
 
+/// An initialization error for [`IterArgs`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum IterInitError<E> {
+    /// If the iterator didn't have enough elements
     NotEnoughElements,
+    /// If there was an error initializing any element of the slice
     Init(E),
 }
 
@@ -231,10 +253,11 @@ where
             return Ok(writer.finish());
         }
 
-        for arg in args.0.take(writer.len()) {
+        args.0
+            .take(writer.len())
             // SAFETY: The writer isn't complete yet
-            unsafe { writer.try_init_unchecked(arg) }.map_err(IterInitError::Init)?
-        }
+            .try_for_each(|arg| unsafe { writer.try_init_unchecked(arg) })
+            .map_err(IterInitError::Init)?;
 
         if writer.is_complete() {
             Ok(writer.finish())
