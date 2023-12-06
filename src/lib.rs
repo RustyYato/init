@@ -10,6 +10,9 @@
 //!
 //! A crate to handle in-place initialization to support initializing unsized or pinned types.
 
+#[doc(hidden)]
+pub use core;
+
 #[cfg(feature = "std")]
 extern crate std;
 
@@ -25,6 +28,8 @@ pub mod layout_provider;
 
 mod primitive;
 pub mod slice;
+
+mod macros;
 
 #[cfg(feature = "alloc")]
 pub mod boxed;

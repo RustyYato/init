@@ -112,6 +112,7 @@ impl<T> Drop for SliceWriter<'_, T> {
 struct Poison<'a>(&'a mut bool);
 
 impl<'a> Poison<'a> {
+    #[inline]
     pub fn cure(self) {
         core::mem::forget(self);
     }
