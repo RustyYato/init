@@ -10,6 +10,12 @@
 //!
 //! A crate to handle in-place initialization to support initializing unsized or pinned types.
 
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 pub mod iter;
 pub mod ptr;
 
@@ -19,6 +25,9 @@ pub mod layout_provider;
 
 mod primitive;
 pub mod slice;
+
+#[cfg(feature = "alloc")]
+pub mod boxed;
 
 /// A trait to initialize a location in place, or error
 pub trait Ctor<Args = ()> {
