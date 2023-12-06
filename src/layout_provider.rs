@@ -317,7 +317,7 @@ unsafe impl<T> LayoutProvider<Option<T>> for OptionLayout {
 }
 
 // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
-unsafe impl<'a, T> LayoutProvider<Option<&'a T>> for NicheLayout {
+unsafe impl<'a, T: ?Sized + SizedOrSlice> LayoutProvider<Option<&'a T>> for NicheLayout {
     #[inline]
     fn layout_for(_: &()) -> Option<Layout> {
         Some(Layout::new::<Option<&T>>())
@@ -335,7 +335,61 @@ unsafe impl<'a, T> LayoutProvider<Option<&'a T>> for NicheLayout {
 }
 
 // SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
-unsafe impl<T> LayoutProvider<Option<NonNull<T>>> for NicheLayout {
+unsafe impl<'a, T: ?Sized + SizedOrSlice> LayoutProvider<Option<&'a mut T>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<&'a mut T>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<'a, T: ?Sized + SizedOrSlice> LayoutProvider<Option<Pin<&'a T>>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<Pin<&'a T>>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<'a, T: ?Sized + SizedOrSlice> LayoutProvider<Option<Pin<&'a mut T>>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<Pin<&'a mut T>>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<T: ?Sized + SizedOrSlice> LayoutProvider<Option<NonNull<T>>> for NicheLayout {
     #[inline]
     fn layout_for(_: &()) -> Option<Layout> {
         Some(Layout::new::<Option<&T>>())
@@ -351,3 +405,51 @@ unsafe impl<T> LayoutProvider<Option<NonNull<T>>> for NicheLayout {
         true
     }
 }
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<T: ?Sized + SizedOrSlice> LayoutProvider<Option<alloc::boxed::Box<T>>> for NicheLayout {
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<alloc::boxed::Box<T>>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+// SAFETY: sized types can always just use cast, is_zeroed is compatible with `Ctor`
+unsafe impl<T: ?Sized + SizedOrSlice> LayoutProvider<Option<Pin<alloc::boxed::Box<T>>>>
+    for NicheLayout
+{
+    #[inline]
+    fn layout_for(_: &()) -> Option<Layout> {
+        Some(Layout::new::<Option<&T>>())
+    }
+
+    #[inline]
+    unsafe fn cast(ptr: NonNull<u8>, _: &()) -> NonNull<Option<Pin<alloc::boxed::Box<T>>>> {
+        ptr.cast()
+    }
+
+    #[inline]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+
+/// # Safety
+///
+/// This trait may only be implemented on sized types and slices
+pub unsafe trait SizedOrSlice {}
+
+/// SAFETY: This trait may only be implemented on sized types and slices
+unsafe impl<T> SizedOrSlice for T {}
+/// SAFETY: This trait may only be implemented on sized types and slices
+unsafe impl<T> SizedOrSlice for [T] {}

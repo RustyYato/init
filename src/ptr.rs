@@ -3,6 +3,7 @@
 use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
+    pin::Pin,
     ptr::NonNull,
 };
 
@@ -167,6 +168,32 @@ impl<'a, T: ?Sized> Init<'a, T> {
     /// Leaks this `Init` because someone else has taken ownership of the underlying pointer
     pub const fn take_ownership(self) {
         core::mem::forget(self);
+    }
+
+    /// Get a mutable reference to the underlying type
+    ///
+    /// # Safety
+    ///
+    /// You must not move the value out of the reference
+    pub unsafe fn get_mut_unchecked(&mut self) -> &mut T {
+        // SAFETY: We have unique access to the ptr, and the caller
+        // guarantees that they will not move the value out of the reference
+        unsafe { self.raw.ptr.as_mut() }
+    }
+
+    /// Get a mutable reference to the underlying type
+    ///
+    /// # Safety
+    ///
+    /// The underlying allocation backing this `Init` must not be deallocated
+    /// before this value is dropped.
+    pub unsafe fn get_pin_mut_unchecked(&mut self) -> Pin<&mut T> {
+        // SAFETY: We have unique access to the ptr, and the caller
+        // guarantees that they will not move the value out of the reference
+        // NonNull<T> has the same layout as `Pin<&mut T>`
+        // and this gets around the auto-self-reference invalidation
+        // caused by creating a &mut T
+        unsafe { core::mem::transmute(self.raw.ptr.as_ptr()) }
     }
 }
 

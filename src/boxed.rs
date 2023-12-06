@@ -9,7 +9,15 @@ use crate::{layout_provider::LayoutProvider, ptr::Uninit};
 /// An initializer for a box
 pub struct Emplace<I, L>(I, PhantomData<fn() -> L>);
 
+impl<I: Copy, L> Copy for Emplace<I, L> {}
+impl<I: Clone, L> Clone for Emplace<I, L> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), PhantomData)
+    }
+}
+
 /// Represents the errors when initializing an element in place in a heap allocation
+#[derive(Debug)]
 pub enum EmplaceError<I> {
     /// If the layout could not be computed
     Layout,
@@ -36,6 +44,17 @@ impl<I> EmplaceError<I> {
             EmplaceError::Alloc(layout) => Some(layout),
             EmplaceError::Init(init) => return init,
         })
+    }
+}
+
+impl<I> EmplaceError<EmplaceError<I>> {
+    /// Handle the allocate errors, and extract the initialization error
+    pub fn merge(self) -> EmplaceError<I> {
+        match self {
+            EmplaceError::Layout => EmplaceError::Layout,
+            EmplaceError::Alloc(layout) => EmplaceError::Alloc(layout),
+            EmplaceError::Init(init) => init,
+        }
     }
 }
 

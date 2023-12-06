@@ -91,6 +91,7 @@ unsafe impl<T, I, L> LayoutProvider<[T], IterArgs<I>> for SliceLayout<L> {
 }
 
 /// a constructor which stores the length, so it can be used to allocate the slice
+#[derive(Debug, Clone, Copy)]
 pub struct InitWithLen<I>(I, usize);
 
 impl<I> InitWithLen<I> {
@@ -131,6 +132,7 @@ impl<T: Ctor> Ctor for [T] {
 
 /// A slice constructor which copies the argument to each element and
 /// initializes each element with the copy
+#[derive(Debug, Clone, Copy)]
 pub struct CopyArgs<I>(I);
 
 impl<I> CopyArgs<I> {
@@ -164,6 +166,7 @@ impl<T, I: crate::Initializer<T> + Copy> Ctor<CopyArgs<I>> for [T] {
 
 /// A slice constructor which clones the argument to each element and
 /// initializes each element with the clone
+#[derive(Debug, Clone, Copy)]
 pub struct CloneArgs<I>(I);
 
 impl<I> CloneArgs<I> {
@@ -209,6 +212,7 @@ impl<T, I: crate::Initializer<T> + Clone> Ctor<CloneArgs<I>> for [T] {
 /// with each initializer. It will consume at most slice.len() elements from the iterator.
 /// If there are fewer than slice.len() elements, then all initialized elements will be dropped
 /// and an error will be reported.
+#[derive(Debug, Clone, Copy)]
 pub struct IterArgs<I>(I);
 
 impl<I> IterArgs<I> {

@@ -98,3 +98,26 @@ impl<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Ctor<TryCtorFro
         args(ptr)
     }
 }
+
+/// Initialize and return the value `T` on the stack
+pub fn try_init_on_stack<T: Unpin, I: crate::Initializer<T>>(init: I) -> Result<T, I::Error> {
+    let mut value = core::mem::MaybeUninit::uninit();
+    // SAFETY: value.as_mut_ptr() is a non-null, aligned, allocated for T, and not aliased
+    let uninit = unsafe { ptr::Uninit::from_raw(value.as_mut_ptr()) };
+    uninit.try_init(init)?.take_ownership();
+    // SAFETY: the value was initialized
+    Ok(unsafe { value.assume_init() })
+}
+
+/// Initialize and return the value `T` on the stack
+pub fn try_init_with<T, I: crate::Initializer<T>, R>(
+    init: I,
+    f: impl FnOnce(core::pin::Pin<&mut T>) -> R,
+) -> Result<R, I::Error> {
+    let mut value = core::mem::MaybeUninit::uninit();
+    // SAFETY: value.as_mut_ptr() is a non-null, aligned, allocated for T, and not aliased
+    let uninit = unsafe { ptr::Uninit::from_raw(value.as_mut_ptr()) };
+    let mut init = uninit.try_init(init)?;
+    // SAFETY: the init will be dropped at the end of this scope, before this stack frame is deallocated
+    Ok(f(unsafe { init.get_pin_mut_unchecked() }))
+}
