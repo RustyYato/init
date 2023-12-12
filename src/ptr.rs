@@ -155,6 +155,16 @@ impl<'a, T> Uninit<'a, [T]> {
 }
 
 impl<'a, T: ?Sized> Init<'a, T> {
+    /// Get the underlying pointer
+    pub const fn as_ptr(&self) -> *const T {
+        self.raw.ptr.as_ptr()
+    }
+
+    /// Get the underlying pointer
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self.raw.ptr.as_ptr()
+    }
+
     /// Convert this `Init` into a raw pointer without dropping the value
     pub const fn into_raw(self) -> *mut T {
         let ptr = self.raw.ptr;
