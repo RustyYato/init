@@ -64,14 +64,14 @@ impl<T: ?Sized + Ctor<A>, A> Initializer<T> for A {
 
 /// Convert a closure to an initializer
 #[inline]
-pub fn init_fn<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>>(f: F) -> CtorFromFn<F> {
+pub fn init_fn<T: ?Sized, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>>(f: F) -> CtorFromFn<F> {
     CtorFromFn(f)
 }
 
 /// An adapter type to convert a closure to an initializer, see [`init_fn`] for details
 pub struct CtorFromFn<F>(F);
 
-impl<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Ctor<CtorFromFn<F>> for T {
+impl<T: ?Sized, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Ctor<CtorFromFn<F>> for T {
     type Error = core::convert::Infallible;
 
     fn try_init(
@@ -84,7 +84,7 @@ impl<T, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Ctor<CtorFromFn<F>> for T {
 
 /// Convert a closure to an initializer
 #[inline]
-pub fn try_init_fn<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>>(
+pub fn try_init_fn<T: ?Sized, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>>(
     f: F,
 ) -> TryCtorFromFn<F> {
     TryCtorFromFn(f)
@@ -93,7 +93,9 @@ pub fn try_init_fn<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>>(
 /// An adapter type to convert a closure to an initializer, see [`try_init_fn`] for details
 pub struct TryCtorFromFn<F>(F);
 
-impl<T, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Ctor<TryCtorFromFn<F>> for T {
+impl<T: ?Sized, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Ctor<TryCtorFromFn<F>>
+    for T
+{
     type Error = E;
 
     fn try_init(
