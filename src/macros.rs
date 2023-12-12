@@ -33,7 +33,7 @@ macro_rules! init_struct {
         $($($fields:ident: $value:expr),+ $(,)?)?
     }) => {
         match $uninit {
-            uninit => init_struct_! {
+            uninit => $crate::init_struct_! {
                 uninit => $type {
                     $($($fields ($value))+)?
                 }
