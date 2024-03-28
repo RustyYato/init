@@ -62,6 +62,28 @@ impl<T: ?Sized + Ctor<A>, A> Initializer<T> for A {
     }
 }
 
+/// Convert a value to an initializer for that value to work around the missing (and
+/// unimplementable) T: Ctor<T>,
+#[inline]
+pub fn init<T>(value: T) -> CtorFromValue<T> {
+    CtorFromValue(value)
+}
+
+/// An adapter type to convert a value to an initializer, see [`init`] for details
+#[derive(Clone, Copy)]
+pub struct CtorFromValue<F>(F);
+
+impl<T> Ctor<CtorFromValue<Self>> for T {
+    type Error = core::convert::Infallible;
+
+    fn try_init(
+        ptr: ptr::Uninit<Self>,
+        CtorFromValue(args): CtorFromValue<Self>,
+    ) -> Result<ptr::Init<Self>, Self::Error> {
+        Ok(ptr.write(args))
+    }
+}
+
 /// Convert a closure to an initializer
 #[inline]
 pub fn init_fn<T: ?Sized, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>>(f: F) -> CtorFromFn<F> {
@@ -69,6 +91,7 @@ pub fn init_fn<T: ?Sized, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>>(f: F) -> Ct
 }
 
 /// An adapter type to convert a closure to an initializer, see [`init_fn`] for details
+#[derive(Clone, Copy)]
 pub struct CtorFromFn<F>(F);
 
 impl<T: ?Sized, F: FnOnce(ptr::Uninit<T>) -> ptr::Init<T>> Ctor<CtorFromFn<F>> for T {
