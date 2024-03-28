@@ -3,7 +3,8 @@
     missing_docs,
     clippy::missing_safety_doc,
     unsafe_op_in_unsafe_fn,
-    clippy::undocumented_unsafe_blocks
+    clippy::undocumented_unsafe_blocks,
+    missing_copy_implementations
 )]
 
 //! # `init`
@@ -114,6 +115,7 @@ pub fn try_init_fn<T: ?Sized, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T
 }
 
 /// An adapter type to convert a closure to an initializer, see [`try_init_fn`] for details
+#[derive(Clone, Copy)]
 pub struct TryCtorFromFn<F>(F);
 
 impl<T: ?Sized, E, F: FnOnce(ptr::Uninit<T>) -> Result<ptr::Init<T>, E>> Ctor<TryCtorFromFn<F>>

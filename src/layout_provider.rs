@@ -29,6 +29,7 @@ pub unsafe trait LayoutProvider<T: ?Sized, Args = ()> {
 }
 
 /// A layout provider for sized types
+#[derive(Clone, Copy)]
 pub struct SizedLayout;
 
 /// SAFETY: cast doesn't change the pointee of `ptr`
@@ -45,6 +46,7 @@ unsafe impl<T, Args> LayoutProvider<T, Args> for SizedLayout {
 }
 
 /// A layout provider for primitive types
+#[derive(Clone, Copy)]
 pub struct PrimitiveLayout;
 
 macro_rules! pick {
@@ -299,8 +301,10 @@ nz_primitive! {
 }
 
 /// The layout provider for Option<T>
+#[derive(Clone, Copy)]
 pub struct OptionLayout;
 /// The layout provider for Option<&T>, Option<&mut T>, Option<NonNull<T>>
+#[derive(Clone, Copy)]
 pub struct NicheLayout;
 
 // SAFETY: sized types can always just use cast

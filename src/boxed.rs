@@ -58,12 +58,12 @@ impl<I> EmplaceError<EmplaceError<I>> {
     }
 }
 
-///
+/// Allocate and construct a value in place without copying
 pub fn emplace<I, L>(init: I) -> Emplace<I, L> {
     Emplace(init, PhantomData)
 }
 
-///
+/// Try to allocate and construct a value in place without copying
 pub fn emplace_with<T: ?Sized, L, I>(init: I) -> Result<Pin<Box<T>>, EmplaceError<I::Error>>
 where
     L: LayoutProvider<T, I>,
@@ -98,7 +98,7 @@ where
     };
 
     let Some(ptr) = NonNull::new(ptr) else {
-        return Err(EmplaceError::Alloc(layout))
+        return Err(EmplaceError::Alloc(layout));
     };
 
     // SAFETY: we allocated the pointer with the given layout
