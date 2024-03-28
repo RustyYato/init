@@ -1,20 +1,25 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! init_struct_ {
-    ($uninit:ident => $type:path {
+    ($uninit:ident => $type:path [$fields_holder:ident] {
         $($fields:ident ($value:expr))*
     }) => {(|| -> $crate::core::result::Result<_, _> {
         let $type { $($fields: _,)* };
         let _: $crate::ptr::Uninit<_> = $uninit;
         let ptr = $uninit.as_ptr();
 
-        $(
+        #[allow(non_camel_case_types)]
+        struct __FieldsManager<$($fields),*> {
+            $($fields: $fields),*
+        }
+
+        let $fields_holder = __FieldsManager {
             // SAFETY: Each field is disjoint, so all fields are not aliased
-            let $fields = unsafe { $crate::ptr::Uninit::from_raw($crate::core::ptr::addr_of_mut!((*ptr).$fields)) };
-        )*
+            $($fields:  unsafe { $crate::ptr::Uninit::from_raw($crate::core::ptr::addr_of_mut!((*ptr).$fields)) }),*
+        };
 
         $(
-            let $fields = $fields.try_init($value)?;
+            let $fields = $fields_holder.$fields.try_init($value)?;
         )*
 
         $(
@@ -34,10 +39,35 @@ macro_rules! init_struct {
     }) => {
         match $uninit {
             uninit => $crate::init_struct_! {
-                uninit => $type {
+                uninit => $type [fields] {
                     $($($fields ($value))+)?
                 }
             },
         }
     };
+    ($uninit:expr => $type:path => $fields_holder:ident {
+        $($($fields:ident: $value:expr),+ $(,)?)?
+    }) => {
+        match $uninit {
+            uninit => $crate::init_struct_! {
+                uninit => $type [$fields_holder] {
+                    $($($fields ($value))+)?
+                }
+            },
+        }
+    };
+}
+
+struct Foo {
+    a: i32,
+    b: i32,
+}
+
+fn test(ptr: crate::ptr::Uninit<Foo>) -> Result<crate::ptr::Init<Foo>, core::convert::Infallible> {
+    init_struct! {
+        ptr => Foo {
+            a: 0,
+            b: 3
+        }
+    }
 }
