@@ -1,7 +1,7 @@
 //! in place slice constructors
 
 use crate::{
-    layout_provider::{LayoutProvider, SizedLayout},
+    layout_provider::{LayoutProvider, SizedLayout, SliceLayoutProvider},
     slice_writer::SliceWriter,
     Ctor,
 };
@@ -27,6 +27,15 @@ unsafe impl<T, I, L: LayoutProvider<[T], I>> LayoutProvider<[T], InitWithLen<I>>
     #[inline]
     fn is_zeroed(args: &InitWithLen<I>) -> bool {
         L::is_zeroed(&args.0)
+    }
+}
+
+// SAFETY: the length is the same one used on layout_for
+unsafe impl<T, I, L: LayoutProvider<[T], I>> SliceLayoutProvider<T, InitWithLen<I>>
+    for SliceLayout<L>
+{
+    fn length(args: &InitWithLen<I>) -> usize {
+        args.1
     }
 }
 

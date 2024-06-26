@@ -28,6 +28,16 @@ pub unsafe trait LayoutProvider<T: ?Sized, Args = ()> {
     }
 }
 
+/// A layout provider for slices
+///
+/// # Safety
+///
+/// the `length` must be compatible with the layout in `layout_for`
+pub unsafe trait SliceLayoutProvider<T, Args = ()>: LayoutProvider<[T], Args> {
+    /// The length of the slice
+    fn length(args: &Args) -> usize;
+}
+
 /// A layout provider for sized types
 #[derive(Clone, Copy)]
 pub struct SizedLayout;

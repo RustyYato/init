@@ -34,6 +34,8 @@ mod macros;
 
 #[cfg(feature = "alloc")]
 pub mod boxed;
+#[cfg(feature = "alloc")]
+pub mod vec;
 
 /// A trait to initialize a location in place, or error
 pub trait Ctor<Args = ()> {
