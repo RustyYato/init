@@ -16,6 +16,8 @@
 mod polyfill;
 mod ptr;
 
+pub mod layout_provider;
+
 pub use ptr::{Init, Uninit};
 
 /// A constructor trait, specifies how to initialize a `T` in place
