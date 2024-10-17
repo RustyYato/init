@@ -106,6 +106,16 @@ impl<'brand, T: ?Sized> Uninit<'brand, T> {
     }
 }
 
+impl<'brand, T> Uninit<'brand, T> {
+    /// Write `value` into the pointer, and return the initialized pointer
+    pub const fn write(mut self, value: T) -> Init<'brand, T> {
+        // SAFETY: as_mut_ptr returns a pointer which is valid for writes
+        unsafe { self.as_mut_ptr().write(value) }
+        // SAFETY: the pointer is now initialized
+        unsafe { self.assume_init() }
+    }
+}
+
 impl<T> UninitSliceIter<'_, T> {
     const IS_ZST: bool = core::mem::size_of::<T>() == 0;
 

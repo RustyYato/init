@@ -3,7 +3,7 @@
 use crate::{Init, Initializer, Uninit};
 
 /// Create an initializer from a function/closure
-pub fn from_fn<T: ?Sized>(
+pub const fn from_fn<T: ?Sized>(
     f: impl FnOnce(Uninit<T>) -> Init<T>,
 ) -> impl Initializer<T, Error = core::convert::Infallible> {
     struct FromFn<F>(F);
@@ -20,7 +20,7 @@ pub fn from_fn<T: ?Sized>(
 }
 
 /// Create an initializer from a function/closure
-pub fn try_from_fn<T: ?Sized, E>(
+pub const fn try_from_fn<T: ?Sized, E>(
     f: impl FnOnce(Uninit<T>) -> Result<Init<T>, E>,
 ) -> impl Initializer<T, Error = E> {
     struct FromFn<F>(F);
