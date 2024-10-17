@@ -1,6 +1,6 @@
 use core::{marker::PhantomData, mem::ManuallyDrop, ptr::NonNull};
 
-use crate::polyfill;
+use crate::{polyfill, Ctor};
 
 #[cfg(test)]
 mod tests;
@@ -86,6 +86,23 @@ impl<'brand, T: ?Sized> Uninit<'brand, T> {
     /// This pointer must point to an initialized value
     pub const unsafe fn assume_init(self) -> Init<'brand, T> {
         Init { raw: self }
+    }
+
+    /// Try to initialize self in place with the given arguments
+    pub fn try_init<Args>(self, args: Args) -> Result<Init<'brand, T>, T::Error>
+    where
+        T: Ctor<Args>,
+    {
+        Ctor::try_init(self, args)
+    }
+
+    /// Initialize self in place with the given arguments
+    pub fn init<Args>(self, args: Args) -> Init<'brand, T>
+    where
+        T: Ctor<Args, Error = core::convert::Infallible>,
+    {
+        let Ok(init) = self.try_init(args);
+        init
     }
 }
 
