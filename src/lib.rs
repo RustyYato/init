@@ -19,6 +19,8 @@ mod ptr;
 pub mod from_fn;
 pub mod layout_provider;
 
+pub mod slice_writer;
+
 pub use ptr::{Init, Uninit};
 
 /// A constructor trait, specifies how to initialize a `T` in place

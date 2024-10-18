@@ -139,6 +139,16 @@ impl<T> Uninit<'_, [T]> {
     pub fn iter_mut(&mut self) -> UninitSliceIter<'_, T> {
         UninitSliceIter::new(self.ptr)
     }
+
+    /// The number of elements in this slice
+    pub const fn len(&self) -> usize {
+        self.ptr.len()
+    }
+
+    /// If there are zero elements in the slice
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<T: ?Sized> AsRef<T> for Init<'_, T> {
@@ -163,6 +173,21 @@ impl<T: ?Sized> Init<'_, T> {
     pub const fn as_mut_ptr(&self) -> *const T {
         self.raw.as_ptr()
     }
+
+    /// skips running the destructor for T, since someone
+    /// else is taking ownership of it
+    pub const fn take_ownership(self) {
+        core::mem::forget(self);
+    }
+}
+
+impl<'brand, T> IntoIterator for Uninit<'brand, [T]> {
+    type IntoIter = UninitSliceIter<'brand, T>;
+    type Item = Uninit<'brand, T>;
+
+    fn into_iter(self) -> UninitSliceIter<'brand, T> {
+        UninitSliceIter::new(ManuallyDrop::new(self).ptr)
+    }
 }
 
 impl<'brand, T> IntoIterator for Init<'brand, [T]> {
@@ -183,7 +208,15 @@ const fn iter_assume_init<T>(value: Uninit<T>) -> Init<T> {
 }
 
 impl<'brand, T> UninitSliceIter<'brand, T> {
-    fn len(&self) -> usize {
+    pub(crate) const unsafe fn unlink<'a>(self) -> UninitSliceIter<'a, T> {
+        UninitSliceIter {
+            ptr: self.ptr,
+            end_or_len: self.end_or_len,
+            _marker: PhantomData,
+        }
+    }
+
+    pub(crate) fn len(&self) -> usize {
         if Self::IS_ZST {
             polyfill::addr(self.end_or_len)
         } else {
@@ -192,7 +225,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         if Self::IS_ZST {
             self.end_or_len.is_null()
         } else {
@@ -200,7 +233,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn next_unchecked(&mut self) -> Uninit<'brand, T> {
+    pub(crate) unsafe fn next_unchecked(&mut self) -> Uninit<'brand, T> {
         if Self::IS_ZST {
             self.end_or_len = self.end_or_len.wrapping_byte_sub(1);
             Uninit {
@@ -219,7 +252,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn next_back_unchecked(&mut self) -> Uninit<'brand, T> {
+    unsafe fn next_back_unchecked(&mut self) -> Uninit<'brand, T> {
         if Self::IS_ZST {
             self.end_or_len = self.end_or_len.wrapping_byte_sub(1);
             Uninit {
@@ -242,6 +275,17 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
     }
 
     fn reset(&mut self) {
+        if Self::IS_ZST {
+            self.end_or_len = core::ptr::null_mut();
+        } else {
+            self.end_or_len = self.ptr.as_ptr();
+        }
+    }
+
+    pub(crate) fn reset_if(&mut self, b: bool) {
+        if !b {
+            return;
+        }
         if Self::IS_ZST {
             self.end_or_len = core::ptr::null_mut();
         } else {
@@ -281,7 +325,8 @@ impl<'brand, T> Iterator for UninitSliceIter<'brand, T> {
         if self.is_empty() {
             None
         } else {
-            Some(self.next_unchecked())
+            // SAFETY: !is_empty
+            Some(unsafe { self.next_unchecked() })
         }
     }
 
@@ -291,7 +336,8 @@ impl<'brand, T> Iterator for UninitSliceIter<'brand, T> {
             None
         } else {
             self.fwd_unchecked(n);
-            Some(self.next_unchecked())
+            // SAFETY: self.len() - n > 0
+            Some(unsafe { self.next_unchecked() })
         }
     }
 
@@ -307,7 +353,8 @@ impl<T> DoubleEndedIterator for UninitSliceIter<'_, T> {
         if self.is_empty() {
             None
         } else {
-            Some(self.next_back_unchecked())
+            // SAFETY: !is_empty
+            Some(unsafe { self.next_back_unchecked() })
         }
     }
 
@@ -317,7 +364,8 @@ impl<T> DoubleEndedIterator for UninitSliceIter<'_, T> {
             None
         } else {
             self.bck_unchecked(n);
-            Some(self.next_back_unchecked())
+            // SAFETY: self.len() - n > 0
+            Some(unsafe { self.next_back_unchecked() })
         }
     }
 }
