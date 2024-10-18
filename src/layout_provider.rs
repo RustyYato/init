@@ -13,6 +13,8 @@ use core::{alloc::Layout, ptr::NonNull};
 /// * layout must give a layout that will fit T
 /// * cast must return a pointer that is valid for the associated layout
 /// * is_zeroed may only return true if the only thing args does is zero out the memory
+///
+/// If Args can be cloned, then all clones must produce the same values when applied to any of these functions
 pub unsafe trait LayoutProvider<T: ?Sized, Args> {
     /// The layout to allocate a pointer to T with when given the following args
     fn layout(args: &Args) -> Option<Layout>;

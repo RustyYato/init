@@ -18,6 +18,7 @@ mod ptr;
 
 pub mod from_fn;
 pub mod layout_provider;
+pub mod slice;
 
 pub mod slice_writer;
 

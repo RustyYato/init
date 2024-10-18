@@ -2,30 +2,30 @@
 
 use crate::{Init, Initializer, Uninit};
 
-/// Create an initializer from a function/closure
-pub const fn from_fn<T: ?Sized>(
-    f: impl FnOnce(Uninit<T>) -> Init<T>,
-) -> impl Initializer<T, Error = core::convert::Infallible> {
-    struct FromFn<F>(F);
+/// Converts a closure to an initializer
+#[derive(Clone, Copy)]
+pub struct InitFn<F>(F);
 
-    impl<T: ?Sized, F: FnOnce(Uninit<T>) -> Init<T>> Initializer<T> for FromFn<F> {
-        type Error = core::convert::Infallible;
+impl<T: ?Sized, F: FnOnce(Uninit<T>) -> Init<T>> Initializer<T> for InitFn<F> {
+    type Error = core::convert::Infallible;
 
-        fn try_init_into(self, ptr: Uninit<T>) -> Result<Init<T>, Self::Error> {
-            Ok((self.0)(ptr))
-        }
+    fn try_init_into(self, ptr: Uninit<T>) -> Result<Init<T>, Self::Error> {
+        Ok((self.0)(ptr))
     }
+}
 
-    FromFn(f)
+/// Create an initializer from a function/closure
+pub const fn from_fn<T: ?Sized, F: FnOnce(Uninit<T>) -> Init<T>>(f: F) -> InitFn<F> {
+    InitFn(f)
 }
 
 /// Create an initializer from a function/closure
 pub const fn try_from_fn<T: ?Sized, E>(
     f: impl FnOnce(Uninit<T>) -> Result<Init<T>, E>,
 ) -> impl Initializer<T, Error = E> {
-    struct FromFn<F>(F);
+    struct TryInitFn<F>(F);
 
-    impl<T: ?Sized, E, F: FnOnce(Uninit<T>) -> Result<Init<T>, E>> Initializer<T> for FromFn<F> {
+    impl<T: ?Sized, E, F: FnOnce(Uninit<T>) -> Result<Init<T>, E>> Initializer<T> for TryInitFn<F> {
         type Error = E;
 
         fn try_init_into(self, ptr: Uninit<T>) -> Result<Init<T>, Self::Error> {
@@ -33,5 +33,5 @@ pub const fn try_from_fn<T: ?Sized, E>(
         }
     }
 
-    FromFn(f)
+    TryInitFn(f)
 }
