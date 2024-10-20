@@ -2,6 +2,14 @@
 
 use crate::{layout_provider::LayoutProvider, slice_writer::SliceWriter, Ctor, Initializer};
 
+impl<T: Ctor<()>> Initializer<[T]> for () {
+    type Error = T::Error;
+
+    fn try_init_into(self, ptr: crate::Uninit<[T]>) -> Result<crate::Init<[T]>, Self::Error> {
+        ptr.try_init(Repeat { init: () })
+    }
+}
+
 /// Repeat an initializer as many times as necessary to initialize the slice
 #[derive(Clone, Copy)]
 pub struct Repeat<I> {

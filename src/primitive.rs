@@ -2,7 +2,7 @@
 
 use crate::{layout_provider::LayoutProvider, Init, Uninit};
 
-use core::{alloc::Layout, ptr::NonNull};
+use core::{alloc::Layout, marker::PhantomData, ptr::NonNull};
 
 /// A [`LayoutProvider`] for [`Sized`] types
 pub struct PrimitiveLayoutProvider;
@@ -84,3 +84,4 @@ prim!(=> [T] *const [T] => core::ptr::slice_from_raw_parts(core::ptr::null(), 0)
 prim!(=> [T] *mut [T] => core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0));
 prim!(*const str => core::ptr::slice_from_raw_parts(core::ptr::null::<u8>(), 0) as *const _);
 prim!(*mut str => core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut::<u8>(), 0) as *mut _);
+prim!(=> [T: ?Sized] PhantomData<T> => PhantomData);
