@@ -36,7 +36,7 @@ pub use ptr::{Init, Uninit};
 /// A constructor trait, specifies how to initialize a `T` in place
 ///
 /// To be implemented on the host type
-pub trait Ctor<Args> {
+pub trait Ctor<Args = ()> {
     /// The error type in case initialization fails
     type Error;
 
