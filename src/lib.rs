@@ -13,6 +13,11 @@
 
 //! A crate for in-place initialization of values for performance and safety
 
+#[doc(hidden)]
+#[macro_use]
+#[path = "macros.rs"]
+pub mod __private_macros;
+
 mod polyfill;
 mod ptr;
 
@@ -20,7 +25,11 @@ pub mod from_fn;
 pub mod layout_provider;
 pub mod slice;
 
+mod primitive;
+
 pub mod slice_writer;
+
+pub use from_fn::{from_fn, try_from_fn};
 
 pub use ptr::{Init, Uninit};
 
