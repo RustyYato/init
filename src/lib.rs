@@ -21,6 +21,7 @@ pub mod __private_macros;
 mod polyfill;
 mod ptr;
 
+pub mod array;
 pub mod from_fn;
 pub mod layout_provider;
 pub mod slice;

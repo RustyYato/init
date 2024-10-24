@@ -13,7 +13,7 @@ impl<T: Ctor<()>> Initializer<[T]> for () {
 /// Repeat an initializer as many times as necessary to initialize the slice
 #[derive(Clone, Copy)]
 pub struct Repeat<I> {
-    init: I,
+    pub(crate) init: I,
 }
 
 impl<T: Ctor<I>, I: Clone> Initializer<[T]> for Repeat<I> {
