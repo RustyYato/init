@@ -57,6 +57,32 @@ macro_rules! prim {
             }
         }
     };
+    ($(=> [$($binder:tt)*])? $t:ty) => {
+        /// SAFETY: is_zeroed never returns zero
+        unsafe impl<$($($binder)*)?> LayoutProvider<$t, $t> for PrimitiveLayoutProvider {
+            fn layout(_: &$t) -> Option<Layout> {
+                Some(Layout::new::<$t>())
+            }
+
+            fn cast(ptr: NonNull<()>, _: &$t) -> NonNull<$t> {
+                ptr.cast()
+            }
+
+            #[allow(unreachable_code)]
+            fn is_zeroed(_args: &$t) -> bool {
+                false
+            }
+        }
+
+        impl<$($($binder)*)?> crate::Initializer<$t> for $t {
+            type Error = core::convert::Infallible;
+
+            #[allow(clippy::needless_lifetimes)]
+            fn try_init_into<'out>(self, u: Uninit<'out, $t>) -> Result<Init<'out, $t>, Self::Error> {
+                Ok(u.write(self))
+            }
+        }
+    };
 }
 
 prim!(u8 => 0);
@@ -85,3 +111,8 @@ prim!(=> [T] *mut [T] => core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut
 prim!(*const str => core::ptr::slice_from_raw_parts(core::ptr::null::<u8>(), 0) as *const _);
 prim!(*mut str => core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut::<u8>(), 0) as *mut _);
 prim!(=> [T: ?Sized] PhantomData<T> => PhantomData);
+
+prim!(=> ['a, T: ?Sized] &'a T);
+prim!(=> ['a, T: ?Sized] &'a mut T);
+prim!(core::time::Duration);
+prim!(core::cmp::Ordering);

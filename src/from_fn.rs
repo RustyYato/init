@@ -43,3 +43,20 @@ where
 {
     TryInitFn(f)
 }
+
+/// Converts a closure to an initializer
+#[derive(Clone, Copy)]
+pub struct WithValue<T>(T);
+
+impl<T> Initializer<T> for WithValue<T> {
+    type Error = core::convert::Infallible;
+
+    fn try_init_into(self, ptr: Uninit<T>) -> Result<Init<T>, Self::Error> {
+        Ok(ptr.write(self.0))
+    }
+}
+
+/// Create an initializer from a value
+pub const fn with_value<T>(value: T) -> WithValue<T> {
+    WithValue(value)
+}
