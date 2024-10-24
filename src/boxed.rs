@@ -32,7 +32,16 @@ where
     T: ?Sized + Ctor<I>,
     L: LayoutProvider<T, I>,
 {
-    let layout = L::layout(&init).expect("Could not construct layout");
+    let Some(layout) = L::layout(&init) else {
+        #[cold]
+        #[inline(never)]
+        fn handle_layout_error() -> ! {
+            panic!("Could not construct layout");
+        }
+
+        handle_layout_error()
+    };
+
     let is_zeroed = L::is_zeroed(&init);
 
     // SAFETY: alloc is only called if the layout has non-zero size
