@@ -11,9 +11,16 @@ impl<T: Ctor<()>> Initializer<[T]> for () {
 }
 
 /// Repeat an initializer as many times as necessary to initialize the slice
+///
+/// see [`repeat`] for details
 #[derive(Clone, Copy)]
 pub struct Repeat<I> {
     pub(crate) init: I,
+}
+
+/// Repeat an initializer as many times as necessary to initialize the slice
+pub const fn repeat<I>(init: I) -> Repeat<I> {
+    Repeat { init }
 }
 
 impl<T: Ctor<I>, I: Clone> Initializer<[T]> for Repeat<I> {
@@ -31,10 +38,17 @@ impl<T: Ctor<I>, I: Clone> Initializer<[T]> for Repeat<I> {
     }
 }
 
-/// Repeat an initializer as many times as necessary to initialize the slice
+/// Get initializers from the iterator, and initialize the slice/array using them
+///
+/// see [`from_iter`] for details
 #[derive(Clone, Copy)]
 pub struct InitFromIter<I> {
     iter: I,
+}
+
+/// Get initializers from the iterator, and initialize the slice/array using them
+pub const fn from_iter<I>(iter: I) -> InitFromIter<I> {
+    InitFromIter { iter }
 }
 
 /// The error type for [`InitFromIter`], specifies if there were not enough elements in the iterator
