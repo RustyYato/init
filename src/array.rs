@@ -1,6 +1,9 @@
 //! initializers for arrays
 
-use crate::{layout_provider::LayoutProvider, slice, Ctor, Init, Initializer, Uninit};
+use crate::{
+    layout_provider::{DefaultLayoutProvider, LayoutProvider},
+    slice, Ctor, Init, Initializer, Uninit,
+};
 
 /// Create an initializer for an array from a slice initializer
 ///
@@ -31,6 +34,14 @@ where
     }
 }
 
+impl<T: Ctor, const N: usize> Initializer<[T; N]> for () {
+    type Error = T::Error;
+
+    fn try_init_into(self, ptr: crate::Uninit<[T; N]>) -> Result<crate::Init<[T; N]>, Self::Error> {
+        ptr.try_init(from_slice(self))
+    }
+}
+
 impl<T: Ctor<I>, I: Clone, const N: usize> Initializer<[T; N]> for slice::Repeat<I> {
     type Error = T::Error;
 
@@ -53,6 +64,12 @@ where
 /// A slice layout provider which can be parameterized on another layout provider
 pub struct ArrayLayoutProvider<L = crate::layout_provider::SizedLayoutProvider>(L);
 
+impl<I, T, const N: usize> crate::layout_provider::DefaultLayoutProviderFor<[T; N]> for FromSlice<I>
+where
+    [T]: DefaultLayoutProvider<I>,
+{
+    type LayoutProvider = ArrayLayoutProvider<<[T] as DefaultLayoutProvider<I>>::LayoutProvider>;
+}
 // SAFETY:
 // arrays are sized, so layout and cast are trivial
 // L handles is_zeroed
@@ -73,6 +90,11 @@ unsafe impl<T, I, L: LayoutProvider<[T], I>, const N: usize>
     }
 }
 
+impl<I, T: DefaultLayoutProvider<I>, const N: usize>
+    crate::layout_provider::DefaultLayoutProviderFor<[T; N]> for slice::Repeat<I>
+{
+    type LayoutProvider = ArrayLayoutProvider<T::LayoutProvider>;
+}
 // SAFETY:
 // arrays are sized, so layout and cast are trivial
 // is_zeroed simply forwards to L
@@ -93,6 +115,11 @@ unsafe impl<T, I, L: LayoutProvider<T, I>, const N: usize>
     }
 }
 
+impl<I: Iterator, T: DefaultLayoutProvider<I::Item>, const N: usize>
+    crate::layout_provider::DefaultLayoutProviderFor<[T; N]> for slice::InitFromIter<I>
+{
+    type LayoutProvider = ArrayLayoutProvider<T::LayoutProvider>;
+}
 // SAFETY:
 // arrays are sized, so layout and cast are trivial
 // is_zeroed returns false
@@ -111,5 +138,30 @@ unsafe impl<T, I: Iterator, L: LayoutProvider<T, I::Item>, const N: usize>
 
     fn is_zeroed(_args: &slice::InitFromIter<I>) -> bool {
         false
+    }
+}
+
+impl<T: DefaultLayoutProvider<()>, const N: usize>
+    crate::layout_provider::DefaultLayoutProviderFor<[T; N]> for ()
+{
+    type LayoutProvider = ArrayLayoutProvider<T::LayoutProvider>;
+}
+// SAFETY:
+// arrays are sized, so layout and cast are trivial
+// is_zeroed returns false
+// L handles the case of cloning I
+unsafe impl<T, L: LayoutProvider<T, ()>, const N: usize>
+    crate::layout_provider::LayoutProvider<[T; N], ()> for ArrayLayoutProvider<L>
+{
+    fn layout(_: &()) -> Option<core::alloc::Layout> {
+        Some(core::alloc::Layout::new::<[T; N]>())
+    }
+
+    fn cast(ptr: core::ptr::NonNull<()>, _: &()) -> core::ptr::NonNull<[T; N]> {
+        ptr.cast()
+    }
+
+    fn is_zeroed(_args: &()) -> bool {
+        L::is_zeroed(&())
     }
 }

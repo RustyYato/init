@@ -13,6 +13,11 @@
 
 //! A crate for in-place initialization of values for performance and safety
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
 #[doc(hidden)]
 #[macro_use]
 #[path = "macros.rs"]
@@ -22,6 +27,8 @@ mod polyfill;
 mod ptr;
 
 pub mod array;
+#[cfg(feature = "alloc")]
+pub mod boxed;
 pub mod from_fn;
 pub mod layout_provider;
 pub mod slice;
@@ -31,6 +38,7 @@ mod primitive;
 pub mod slice_writer;
 
 pub use from_fn::{from_fn, try_from_fn};
+pub use primitive::PrimitiveLayoutProvider;
 
 pub use ptr::{Init, Uninit};
 

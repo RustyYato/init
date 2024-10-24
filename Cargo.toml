@@ -3,4 +3,11 @@ name = "init"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+
+alloc = []
+std = ["alloc"]
+
+default = ["std"]
+
 [dependencies]

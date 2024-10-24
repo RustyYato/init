@@ -2,6 +2,22 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
+/// Specifies the default layout provider to use for a given initializer
+pub trait DefaultLayoutProviderFor<T: ?Sized>: Sized {
+    /// the layout provider
+    type LayoutProvider: LayoutProvider<T, Self>;
+}
+
+/// Specifies the default layout provider to use for a given type
+pub trait DefaultLayoutProvider<I> {
+    /// the layout provider
+    type LayoutProvider: LayoutProvider<Self, I>;
+}
+
+impl<T: ?Sized, I: DefaultLayoutProviderFor<T>> DefaultLayoutProvider<I> for T {
+    type LayoutProvider = I::LayoutProvider;
+}
+
 /// A layout provider specifies...
 /// * how to get the layout from the arguments
 /// * when it is safe to skip initialization

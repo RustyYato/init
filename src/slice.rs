@@ -1,6 +1,10 @@
 //! initializers for slices
 
-use crate::{layout_provider::LayoutProvider, slice_writer::SliceWriter, Ctor, Initializer};
+use crate::{
+    layout_provider::{DefaultLayoutProvider, LayoutProvider},
+    slice_writer::SliceWriter,
+    Ctor, Initializer,
+};
 
 impl<T: Ctor<()>> Initializer<[T]> for () {
     type Error = T::Error;
@@ -90,7 +94,7 @@ pub struct SliceLayoutProvider<L = crate::layout_provider::SizedLayoutProvider>(
 
 /// Repeat an initializer as many times as necessary to initialize the slice
 #[derive(Clone, Copy)]
-pub struct WithLength<I> {
+pub struct WithLength<I = ()> {
     init: I,
     len: usize,
 }
@@ -107,6 +111,11 @@ impl WithLength<()> {
     }
 }
 
+impl<I, T: DefaultLayoutProvider<I>> crate::layout_provider::DefaultLayoutProviderFor<[T]>
+    for WithLength<Repeat<I>>
+{
+    type LayoutProvider = SliceLayoutProvider<T::LayoutProvider>;
+}
 // SAFETY:
 // The layout fits [T] with length specified in WithLength,
 // and cast returns a slice with the specified length
@@ -128,6 +137,11 @@ unsafe impl<T, I, L: LayoutProvider<T, I>>
     }
 }
 
+impl<I: Iterator, T: DefaultLayoutProvider<I::Item>>
+    crate::layout_provider::DefaultLayoutProviderFor<[T]> for WithLength<InitFromIter<I>>
+{
+    type LayoutProvider = SliceLayoutProvider<T::LayoutProvider>;
+}
 // SAFETY:
 // The layout fits [T] with length specified in WithLength,
 // and cast returns a slice with the specified length
@@ -150,6 +164,31 @@ unsafe impl<T, I: Iterator, L: LayoutProvider<T, I::Item>>
 
     fn is_zeroed(_args: &WithLength<InitFromIter<I>>) -> bool {
         false
+    }
+}
+
+impl<T: DefaultLayoutProvider<()>> crate::layout_provider::DefaultLayoutProviderFor<[T]>
+    for WithLength
+{
+    type LayoutProvider = SliceLayoutProvider<T::LayoutProvider>;
+}
+// SAFETY:
+// arrays are sized, so layout and cast are trivial
+// is_zeroed returns false
+// L handles the case of cloning I
+unsafe impl<T, L: LayoutProvider<T, ()>> crate::layout_provider::LayoutProvider<[T], WithLength>
+    for SliceLayoutProvider<L>
+{
+    fn layout(args: &WithLength) -> Option<core::alloc::Layout> {
+        core::alloc::Layout::array::<T>(args.len).ok()
+    }
+
+    fn cast(ptr: core::ptr::NonNull<()>, args: &WithLength) -> core::ptr::NonNull<[T]> {
+        core::ptr::NonNull::slice_from_raw_parts(ptr.cast(), args.len)
+    }
+
+    fn is_zeroed(_args: &WithLength) -> bool {
+        L::is_zeroed(&())
     }
 }
 

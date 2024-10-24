@@ -1,6 +1,9 @@
 #![allow(clippy::cmp_null, ambiguous_wide_pointer_comparisons)]
 
-use crate::{layout_provider::LayoutProvider, Init, Uninit};
+use crate::{
+    layout_provider::{DefaultLayoutProviderFor, LayoutProvider},
+    Init, Uninit,
+};
 
 use core::{alloc::Layout, marker::PhantomData, ptr::NonNull};
 
@@ -9,6 +12,9 @@ pub struct PrimitiveLayoutProvider;
 
 macro_rules! prim {
     ($(=> [$($binder:tt)*])? $t:ty => $zero:expr) => {
+        impl<$($($binder)*)?> DefaultLayoutProviderFor<$t> for () {
+            type LayoutProvider = PrimitiveLayoutProvider;
+        }
         /// SAFETY: is_zeroed only returns false
         unsafe impl<$($($binder)*)?> LayoutProvider<$t, ()> for PrimitiveLayoutProvider {
             fn layout(_: &()) -> Option<Layout> {
@@ -32,6 +38,9 @@ macro_rules! prim {
             }
         }
 
+        impl<$($($binder)*)?> DefaultLayoutProviderFor<$t> for $t {
+            type LayoutProvider = PrimitiveLayoutProvider;
+        }
         /// SAFETY: is_zeroed only returns true if args is zero
         unsafe impl<$($($binder)*)?> LayoutProvider<$t, $t> for PrimitiveLayoutProvider {
             fn layout(_: &$t) -> Option<Layout> {
@@ -58,6 +67,9 @@ macro_rules! prim {
         }
     };
     ($(=> [$($binder:tt)*])? $t:ty) => {
+        impl<$($($binder)*)?> DefaultLayoutProviderFor<$t> for $t {
+            type LayoutProvider = PrimitiveLayoutProvider;
+        }
         /// SAFETY: is_zeroed never returns zero
         unsafe impl<$($($binder)*)?> LayoutProvider<$t, $t> for PrimitiveLayoutProvider {
             fn layout(_: &$t) -> Option<Layout> {
