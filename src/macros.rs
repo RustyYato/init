@@ -34,7 +34,7 @@ pub trait GetConverter<T, U> {
     fn __private_init_get_converter(&self) -> Self::Converter;
 }
 
-struct Wrapper<'a, T: ?Sized>(&'a T);
+pub struct Wrapper<'a, T: ?Sized>(pub &'a T);
 
 pub struct TagFrom<T, U>(PhantomData<(T, U)>);
 pub struct TagInf;
