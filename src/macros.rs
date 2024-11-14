@@ -11,7 +11,7 @@ macro_rules! init_struct {
             $(
                 // SAFETY: re-borrowing a field as an uninit is sound
                 let field = unsafe { $crate::Uninit::from_raw(&raw mut (*ptr).$field) };
-                let $field = match field.try_init($field_value) {
+                let mut $field = match field.try_init($field_value) {
                     Ok(field) => field,
                     Err(x) => {
                         use $crate::__private_macros::GetConverter;
@@ -20,6 +20,8 @@ macro_rules! init_struct {
                         return Err(converter.convert(x))
                     },
                 };
+
+                let _ = $field.as_mut_ptr(); // to silence unused mut warnings
             )*
             $crate::__private_macros::core::mem::forget(($($field,)*));
             // SAFETY: all fields were initialized
