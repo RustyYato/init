@@ -18,6 +18,50 @@ impl<T: Ctor<()>> Initializer<[T]> for () {
 ///
 /// see [`repeat`] for details
 #[derive(Clone, Copy)]
+pub struct CopyFromSlice<'a, T> {
+    pub(crate) init: &'a [T],
+}
+
+/// Copies the values from the slice directly into the output
+pub const fn copy_from_slice<T: Copy>(slice: &[T]) -> CopyFromSlice<T> {
+    CopyFromSlice { init: slice }
+}
+
+/// The error type for [`CopyFromSlice`]'s [`Initializer`] impl
+pub struct CopyFromSliceError {
+    /// the length of the slice to copy from into
+    pub src_len: usize,
+    /// the length of the slice to write into
+    pub dest_len: usize,
+}
+
+impl<T: Copy> Initializer<[T]> for CopyFromSlice<'_, T> {
+    type Error = CopyFromSliceError;
+
+    fn try_init_into(self, mut ptr: crate::Uninit<[T]>) -> Result<crate::Init<[T]>, Self::Error> {
+        if self.init.len() != ptr.len() {
+            Err(CopyFromSliceError {
+                src_len: self.init.len(),
+                dest_len: ptr.len(),
+            })
+        } else {
+            // SAFETY: the uninit is not aliased so it doesn't overlap with self.init
+            // and we just checked that they have the same lengths
+            unsafe {
+                ptr.as_mut_ptr()
+                    .cast::<T>()
+                    .copy_from_nonoverlapping(self.init.as_ptr(), self.init.len())
+            };
+            // SAFETY: this was copied by above
+            Ok(unsafe { ptr.assume_init() })
+        }
+    }
+}
+
+/// Repeat an initializer as many times as necessary to initialize the slice
+///
+/// see [`repeat`] for details
+#[derive(Clone, Copy)]
 pub struct Repeat<I> {
     pub(crate) init: I,
 }
@@ -189,6 +233,26 @@ unsafe impl<T, L: LayoutProvider<T, ()>> crate::layout_provider::LayoutProvider<
 
     fn is_zeroed(_args: &WithLength) -> bool {
         L::is_zeroed(&())
+    }
+}
+
+// SAFETY:
+// arrays are sized, so layout and cast are trivial
+// is_zeroed returns false
+// L handles the case of cloning I
+unsafe impl<T, L: LayoutProvider<T, ()>>
+    crate::layout_provider::LayoutProvider<[T], CopyFromSlice<'_, T>> for SliceLayoutProvider<L>
+{
+    fn layout(args: &CopyFromSlice<T>) -> Option<core::alloc::Layout> {
+        Some(core::alloc::Layout::for_value(args.init))
+    }
+
+    fn cast(ptr: core::ptr::NonNull<()>, args: &CopyFromSlice<T>) -> core::ptr::NonNull<[T]> {
+        core::ptr::NonNull::slice_from_raw_parts(ptr.cast(), args.init.len())
+    }
+
+    fn is_zeroed(_args: &CopyFromSlice<T>) -> bool {
+        false
     }
 }
 
