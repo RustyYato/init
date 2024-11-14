@@ -170,8 +170,8 @@ impl<T: ?Sized> Init<'_, T> {
     }
 
     /// Get the underlying mutable raw pointer
-    pub const fn as_mut_ptr(&self) -> *const T {
-        self.raw.as_ptr()
+    pub const fn as_mut_ptr(&mut self) -> *mut T {
+        self.raw.as_mut_ptr()
     }
 
     /// skips running the destructor for T, since someone
