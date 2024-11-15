@@ -9,7 +9,7 @@ mod tests;
 #[repr(transparent)]
 pub struct Uninit<'brand, T: ?Sized> {
     ptr: NonNull<T>,
-    brand: PhantomData<fn() -> *mut &'brand ()>,
+    brand: PhantomData<fn() -> (*mut &'brand (), *mut T)>,
 }
 
 /// A pointer type which represents a pointer to some initialized allocated memory
