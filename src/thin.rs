@@ -303,7 +303,7 @@ unsafe impl<P: ErasablePtr> ErasablePtr for Thin<P> {
 // Box::into_raw gives a valid pointer which can be converted into a (mutable) reference
 unsafe impl<T: Erasable> ErasablePtr for alloc::boxed::Box<T> {
     fn into_erased(self) -> NonNull<Erased> {
-        let ptr = alloc::boxed::Box::into_raw(self);
+        let ptr = Self::into_raw(self);
         // SAFETY: Box is guaranteed to be non-null
         let ptr = unsafe { NonNull::new_unchecked(ptr) };
         // SAFETY: Box is guaranteed to be initialized and well aligned
@@ -314,7 +314,57 @@ unsafe impl<T: Erasable> ErasablePtr for alloc::boxed::Box<T> {
         // SAFETY: ptr came from `into_erased`, which created ptr via T::erase
         let ptr = unsafe { T::unerase(ptr) }.as_ptr();
         // SAFETY: T::unerase is the inverse of T::erase, so this is the pointer from Box::into_raw
-        unsafe { alloc::boxed::Box::from_raw(ptr) }
+        unsafe { Self::from_raw(ptr) }
+    }
+}
+
+#[cfg(feature = "alloc")]
+// SAFETY:
+//
+// no references are created
+//
+// from_erased is the inverse of `into_erased`
+//
+// Rc::into_raw gives a valid pointer which can be converted into a reference
+unsafe impl<T: Erasable> ErasablePtr for alloc::rc::Rc<T> {
+    fn into_erased(self) -> NonNull<Erased> {
+        let ptr = Self::into_raw(self);
+        // SAFETY: Box is guaranteed to be non-null
+        let ptr = unsafe { NonNull::new_unchecked(ptr.cast_mut()) };
+        // SAFETY: Box is guaranteed to be initialized and well aligned
+        unsafe { T::erase(ptr) }
+    }
+
+    unsafe fn from_erased(ptr: NonNull<Erased>) -> Self {
+        // SAFETY: ptr came from `into_erased`, which created ptr via T::erase
+        let ptr = unsafe { T::unerase(ptr) }.as_ptr();
+        // SAFETY: T::unerase is the inverse of T::erase, so this is the pointer from Box::into_raw
+        unsafe { Self::from_raw(ptr) }
+    }
+}
+
+#[cfg(feature = "alloc")]
+// SAFETY:
+//
+// no references are created
+//
+// from_erased is the inverse of `into_erased`
+//
+// Rc::into_raw gives a valid pointer which can be converted into a reference
+unsafe impl<T: Erasable> ErasablePtr for alloc::sync::Arc<T> {
+    fn into_erased(self) -> NonNull<Erased> {
+        let ptr = Self::into_raw(self);
+        // SAFETY: Box is guaranteed to be non-null
+        let ptr = unsafe { NonNull::new_unchecked(ptr.cast_mut()) };
+        // SAFETY: Box is guaranteed to be initialized and well aligned
+        unsafe { T::erase(ptr) }
+    }
+
+    unsafe fn from_erased(ptr: NonNull<Erased>) -> Self {
+        // SAFETY: ptr came from `into_erased`, which created ptr via T::erase
+        let ptr = unsafe { T::unerase(ptr) }.as_ptr();
+        // SAFETY: T::unerase is the inverse of T::erase, so this is the pointer from Box::into_raw
+        unsafe { Self::from_raw(ptr) }
     }
 }
 
