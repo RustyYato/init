@@ -35,6 +35,8 @@ pub mod slice;
 
 mod primitive;
 
+pub mod thin;
+
 pub mod slice_writer;
 
 pub use from_fn::{from_fn, try_from_fn};
