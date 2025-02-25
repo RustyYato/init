@@ -182,6 +182,11 @@ impl<P: ErasablePtr> ThinCopy<P> {
         // SAFETY: The implementor of `ErasablePtr` ensures that this is safe
         unsafe { Erasable::unerase(self.ptr) }
     }
+
+    /// Check if these two pointers point to the same object
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        this.ptr == other.ptr
+    }
 }
 
 impl<P: ErasablePtr + Copy> ThinCopy<P> {
@@ -225,6 +230,35 @@ impl<P: ErasablePtr> Thin<P> {
         P::Target: Erasable,
     {
         self.thin.as_ptr()
+    }
+
+    fn inner(this: &Self) -> ManuallyDrop<P> {
+        // SAFETY: the P is not dropped, so this should be fine
+        ManuallyDrop::new(unsafe { P::from_erased(this.thin.ptr) })
+    }
+
+    /// Check if these two pointers point to the same object
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        this.thin.ptr == other.thin.ptr
+    }
+
+    /// run a closure with a borrow of the pointer
+    pub fn with<T>(&self, f: impl FnOnce(&P) -> T) -> T {
+        f(&Self::inner(self))
+    }
+
+    /// run a closure with a borrow of the pointer
+    pub fn with_mut<T>(&mut self, f: impl FnOnce(&mut P) -> T) -> T {
+        let mut ptr = scopeguard::guard(Self::inner(self), |x| {
+            crate::polyfill::write(self, Self::erase(ManuallyDrop::into_inner(x)))
+        });
+        f(&mut ptr)
+    }
+}
+
+impl<P: Clone + ErasablePtr> Clone for Thin<P> {
+    fn clone(&self) -> Self {
+        Thin::erase((*Self::inner(self)).clone())
     }
 }
 

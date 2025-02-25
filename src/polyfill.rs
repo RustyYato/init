@@ -17,3 +17,8 @@ pub fn addr<T>(ptr: *mut T) -> usize {
     // provenance).
     unsafe { core::mem::transmute(ptr.cast::<()>()) }
 }
+
+pub fn write<T>(ptr: &mut T, value: T) {
+    // SAFETY: mutable references are always valid for writes
+    unsafe { core::ptr::write(ptr, value) }
+}
