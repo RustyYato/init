@@ -128,3 +128,28 @@ prim!(=> ['a, T: ?Sized] &'a T);
 prim!(=> ['a, T: ?Sized] &'a mut T);
 prim!(core::time::Duration);
 prim!(core::cmp::Ordering);
+
+impl DefaultLayoutProviderFor<()> for () {
+    type LayoutProvider = PrimitiveLayoutProvider;
+}
+
+/// SAFETY: is_zeroed never returns zero
+unsafe impl LayoutProvider<(), ()> for PrimitiveLayoutProvider {
+    fn layout(_: &()) -> Option<Layout> {
+        Some(Layout::new::<()>())
+    }
+    fn cast(ptr: NonNull<()>, _: &()) -> NonNull<()> {
+        ptr.cast()
+    }
+    #[allow(unreachable_code)]
+    fn is_zeroed(_args: &()) -> bool {
+        true
+    }
+}
+impl crate::Initializer<()> for () {
+    type Error = core::convert::Infallible;
+    #[allow(clippy::needless_lifetimes)]
+    fn try_init_into<'out>(self, u: Uninit<'out, ()>) -> Result<Init<'out, ()>, Self::Error> {
+        Ok(u.write(self))
+    }
+}

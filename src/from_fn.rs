@@ -1,6 +1,9 @@
 //! create initializers from functions/closures
 
-use crate::{Init, Initializer, Uninit};
+use crate::{
+    layout_provider::{DefaultLayoutProviderFor, SizedLayoutProvider},
+    Init, Initializer, Uninit,
+};
 
 /// Converts a closure to an initializer
 #[derive(Clone, Copy)]
@@ -12,6 +15,14 @@ impl<T: ?Sized, F: FnOnce(Uninit<T>) -> Init<T>> Initializer<T> for InitFn<F> {
     fn try_init_into(self, ptr: Uninit<T>) -> Result<Init<T>, Self::Error> {
         Ok((self.0)(ptr))
     }
+}
+
+impl<F, T> DefaultLayoutProviderFor<T> for InitFn<F> {
+    type LayoutProvider = SizedLayoutProvider;
+}
+
+impl<F, T> DefaultLayoutProviderFor<T> for TryInitFn<F> {
+    type LayoutProvider = SizedLayoutProvider;
 }
 
 /// Create an initializer from a function/closure

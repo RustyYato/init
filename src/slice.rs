@@ -177,7 +177,7 @@ unsafe impl<T, I, L: LayoutProvider<T, I>>
     }
 
     fn is_zeroed(args: &WithLength<Repeat<I>>) -> bool {
-        L::is_zeroed(&args.init.init)
+        args.len == 0 || L::is_zeroed(&args.init.init)
     }
 }
 
@@ -206,8 +206,8 @@ unsafe impl<T, I: Iterator, L: LayoutProvider<T, I::Item>>
         core::ptr::NonNull::slice_from_raw_parts(ptr.cast(), args.len)
     }
 
-    fn is_zeroed(_args: &WithLength<InitFromIter<I>>) -> bool {
-        false
+    fn is_zeroed(args: &WithLength<InitFromIter<I>>) -> bool {
+        args.len == 0
     }
 }
 
@@ -231,8 +231,8 @@ unsafe impl<T, L: LayoutProvider<T, ()>> crate::layout_provider::LayoutProvider<
         core::ptr::NonNull::slice_from_raw_parts(ptr.cast(), args.len)
     }
 
-    fn is_zeroed(_args: &WithLength) -> bool {
-        L::is_zeroed(&())
+    fn is_zeroed(args: &WithLength) -> bool {
+        args.len == 0 || L::is_zeroed(&())
     }
 }
 

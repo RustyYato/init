@@ -35,6 +35,7 @@ pub mod slice;
 
 mod primitive;
 
+pub mod slice_tail;
 pub mod thin;
 
 pub mod slice_writer;
