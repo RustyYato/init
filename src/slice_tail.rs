@@ -5,7 +5,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use crate::{
     layout_provider::{DefaultLayoutProvider, LayoutProvider, SizedLayoutProvider},
     thin::Erasable,
-    Ctor, Initializer,
+    Initializer,
 };
 
 /// An erasable type which has a slice tail

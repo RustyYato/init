@@ -24,7 +24,7 @@ impl<T> Drop for SliceWriter<'_, T> {
 
 impl<'brand, T> SliceWriter<'brand, T> {
     /// Create an initializer from an uninitialized slice
-    pub fn new(mut uninit: Uninit<'brand, [T]>) -> Self {
+    pub const fn new(mut uninit: Uninit<'brand, [T]>) -> Self {
         Self {
             // SAFETY: ptr is not used while iter is active
             iter: unsafe { uninit.iter_mut().unlink() },

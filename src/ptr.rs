@@ -136,7 +136,7 @@ impl<T> UninitSliceIter<'_, T> {
 
 impl<T> Uninit<'_, [T]> {
     /// Get an iterator over [`Uninit<T>`] which points to each element of the slice
-    pub fn iter_mut(&mut self) -> UninitSliceIter<'_, T> {
+    pub const fn iter_mut(&mut self) -> UninitSliceIter<'_, T> {
         UninitSliceIter::new(self.ptr)
     }
 
@@ -274,7 +274,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn reset(&mut self) {
+    const fn reset(&mut self) {
         if Self::IS_ZST {
             self.end_or_len = core::ptr::null_mut();
         } else {
@@ -282,7 +282,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    pub(crate) fn reset_if(&mut self, b: bool) {
+    pub(crate) const fn reset_if(&mut self, b: bool) {
         if !b {
             return;
         }
@@ -293,7 +293,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn fwd_unchecked(&mut self, n: usize) {
+    const fn fwd_unchecked(&mut self, n: usize) {
         if Self::IS_ZST {
             self.end_or_len = self.end_or_len.wrapping_byte_sub(n);
         } else {
@@ -302,7 +302,7 @@ impl<'brand, T> UninitSliceIter<'brand, T> {
         }
     }
 
-    fn bck_unchecked(&mut self, n: usize) {
+    const fn bck_unchecked(&mut self, n: usize) {
         if Self::IS_ZST {
             self.end_or_len = self.end_or_len.wrapping_byte_sub(n);
         } else {
